@@ -1,37 +1,21 @@
-#!/usr/bin/env bash
-[ -z "$BUILD_NUMBER" ] && echo "Build Number must be set as an environment variable" && exit 1;
-[ -z "$ARTIFACTORY_USER" ] && echo "Artifactory User must be set as an environment variable" && exit 1;
-[ -z "$ARTIFACTORY_PASSWORD" ] && echo "Artifactory Password must be set as an environment variable" && exit 1;
+#!/bin/bash
+#
+# Deploy a jar, source jar, and javadoc jar to Sonatype's snapshot repo.
+#
+# Adapted from https://coderwall.com/p/9b_lfq and
+# http://benlimmer.com/2013/12/26/automatically-publish-javadoc-to-gh-pages-with-travis-ci/
 
-./gradlew clean
+REPO_URL="git@github.com:Tinder/Scarlet.git"
+BRANCH="master"
 
-./gradlew scarlet-core:build scarlet-core:artifactoryPublish
+set -e
 
-./gradlew scarlet-core-internal:build scarlet-core-internal:artifactoryPublish
-
-./gradlew scarlet:build scarlet:artifactoryPublish
-
-./gradlew scarlet-test-utils:build scarlet-test-utils:artifactoryPublish
-
-./gradlew scarlet-message-adapter-builtin:build scarlet-message-adapter-builtin:artifactoryPublish
-
-./gradlew scarlet-message-adapter-gson:build scarlet-message-adapter-gson:artifactoryPublish
-
-./gradlew scarlet-message-adapter-moshi:build scarlet-message-adapter-moshi:artifactoryPublish
-
-./gradlew scarlet-message-adapter-protobuf:build scarlet-message-adapter-protobuf:artifactoryPublish
-
-./gradlew scarlet-stream-adapter-builtin:build scarlet-stream-adapter-builtin:artifactoryPublish
-
-./gradlew scarlet-stream-adapter-rxjava:build scarlet-stream-adapter-rxjava:artifactoryPublish
-
-./gradlew scarlet-stream-adapter-rxjava2:build scarlet-stream-adapter-rxjava2:artifactoryPublish
-
-./gradlew scarlet-stream-adapter-coroutines:build scarlet-stream-adapter-coroutines:artifactoryPublish
-
-./gradlew scarlet-websocket-okhttp:build scarlet-websocket-okhttp:artifactoryPublish
-
-./gradlew scarlet-websocket-mockwebserver:build scarlet-websocket-mockwebserver:artifactoryPublish
-
-./gradlew scarlet-lifecycle-android:assemble scarlet-lifecycle-android:generatePomFileForAarPublication
-./gradlew scarlet-lifecycle-android:artifactoryPublish
+if [ "${CIRCLE_REPOSITORY_URL}" != "$REPO_URL" ]; then
+  echo "Skipping snapshot deployment: wrong repository. Expected '$REPO_URL' but was '${CIRCLE_REPOSITORY_URL}'."
+elif [ "${CIRCLE_BRANCH}" != "$BRANCH" ]; then
+  echo "Skipping snapshot deployment: wrong branch. Expected '$BRANCH' but was '${CIRCLE_BRANCH}'."
+else
+  echo "Deploying snapshot..."
+  ./gradlew clean uploadArchives
+  echo "Snapshot deployed!"
+fi
